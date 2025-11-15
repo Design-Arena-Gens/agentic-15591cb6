@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analog Clock</title>
+    <style>
+      :root {
+        --clock-size: clamp(200px, 40vw, 380px);
+        --border-width: 12px;
+        --center-size: 18px;
+        --hand-radius: calc(var(--clock-size) / 2);
+        --hour-hand-width: 8px;
+        --minute-hand-width: 6px;
+        --second-hand-width: 3px;
+        --hour-hand-length: calc(var(--hand-radius) * 0.55);
+        --minute-hand-length: calc(var(--hand-radius) * 0.78);
+        --second-hand-length: calc(var(--hand-radius) * 0.9);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #ffffff;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+
+      .clock {
+        position: relative;
+        width: var(--clock-size);
+        height: var(--clock-size);
+        border-radius: 50%;
+        border: var(--border-width) solid #1f2937;
+        background: radial-gradient(circle at center, #f9fafb 0%, #ffffff 60%, #e5e7eb 100%);
+        box-shadow:
+          inset 0 0 30px rgba(15, 23, 42, 0.1),
+          0 12px 35px rgba(15, 23, 42, 0.18);
+      }
+
+      .clock::after {
+        content: "";
+        position: absolute;
+        width: calc(var(--center-size) * 1.4);
+        height: calc(var(--center-size) * 1.4);
+        background: #1f2937;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.35);
+      }
+
+      .tick {
+        position: absolute;
+        width: 6px;
+        height: calc(var(--clock-size) * 0.04);
+        background-color: #1f2937;
+        top: calc(var(--clock-size) * 0.03);
+        left: 50%;
+        transform-origin: 50% calc(var(--hand-radius) - calc(var(--clock-size) * 0.03));
+        z-index: 1;
+      }
+
+      .tick[data-type="hour"] {
+        width: 8px;
+        height: calc(var(--clock-size) * 0.07);
+        background-color: #111827;
+        top: calc(var(--clock-size) * 0.02);
+        transform-origin: 50% calc(var(--hand-radius) - calc(var(--clock-size) * 0.02));
+      }
+
+      .numeral {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        font-size: calc(var(--clock-size) * 0.085);
+        color: #111827;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: calc(var(--clock-size) * 0.09);
+        transform-origin: center;
+        z-index: 1;
+      }
+
+      .numeral span {
+        display: inline-flex;
+        transform: rotate(calc(-30deg * var(--index)));
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+
+      .hand {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2;
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .hand::before {
+        content: "";
+        position: absolute;
+        width: var(--hand-width);
+        height: var(--hand-length);
+        background: var(--hand-color);
+        border-radius: var(--hand-width);
+        transform: translateY(calc(var(--hand-length) / -2));
+        box-shadow: 0 6px 12px rgba(15, 23, 42, 0.12);
+      }
+
+      .hand.hour::before {
+        --hand-width: var(--hour-hand-width);
+        --hand-length: var(--hour-hand-length);
+        --hand-color: #111827;
+      }
+
+      .hand.minute::before {
+        --hand-width: var(--minute-hand-width);
+        --hand-length: var(--minute-hand-length);
+        --hand-color: #111827;
+      }
+
+      .hand.second::before {
+        --hand-width: var(--second-hand-width);
+        --hand-length: var(--second-hand-length);
+        --hand-color: #ef4444;
+        transform: translateY(calc(var(--second-hand-length) / -2));
+      }
+
+      .hand.second {
+        animation: rotate-second 60s linear infinite;
+        transition: none;
+      }
+
+      @keyframes rotate-second {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @media (max-width: 600px) {
+        :root {
+          --border-width: 10px;
+          --center-size: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="clock" aria-label="Analog clock showing the current time">
+      <div class="hand hour" id="hour-hand"></div>
+      <div class="hand minute" id="minute-hand"></div>
+      <div class="hand second" id="second-hand"></div>
+    </div>
+    <script>
+      const clock = document.querySelector(".clock");
+      const hourHand = document.getElementById("hour-hand");
+      const minuteHand = document.getElementById("minute-hand");
+      const secondHand = document.getElementById("second-hand");
+
+      function createTicks() {
+        for (let i = 0; i < 60; i++) {
+          const tick = document.createElement("div");
+          tick.className = "tick";
+          if (i % 5 === 0) {
+            tick.dataset.type = "hour";
+            const numeral = document.createElement("div");
+            numeral.className = "numeral";
+            numeral.style.setProperty("--index", i / 5);
+            numeral.style.transform = `rotate(${i * 6}deg)`;
+            const value = i === 0 ? 12 : i / 5;
+            numeral.innerHTML = `<span>${value}</span>`;
+            clock.appendChild(numeral);
+          }
+          tick.style.transform = `rotate(${i * 6}deg)`;
+          clock.appendChild(tick);
+        }
+      }
+
+      function setClockHands(date, { syncSecondHand = false } = {}) {
+        const seconds = date.getSeconds();
+        const minutes = date.getMinutes();
+        const hours = date.getHours();
+
+        const minuteRotation = minutes * 6 + seconds * 0.1;
+        const hourRotation = (hours % 12) * 30 + minutes * 0.5;
+
+        hourHand.style.transform = `rotate(${hourRotation}deg)`;
+        minuteHand.style.transform = `rotate(${minuteRotation}deg)`;
+        if (syncSecondHand) {
+          secondHand.style.animationDelay = `-${seconds}s`;
+        }
+      }
+
+      createTicks();
+      const now = new Date();
+      setClockHands(now, { syncSecondHand: true });
+      setInterval(() => setClockHands(new Date()), 1000);
+    </script>
+  </body>
+</html>
